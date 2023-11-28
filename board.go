@@ -9,6 +9,7 @@ type Board struct {
 	lines    [][]Block
 	aliveStr string
 	deadStr  string
+	sep      string
 }
 
 func NewBoard(height, width int, aliveStr, deadStr string) Board {
@@ -25,15 +26,19 @@ func NewBoard(height, width int, aliveStr, deadStr string) Board {
 		lines:    lines,
 		aliveStr: aliveStr,
 		deadStr:  deadStr,
+		sep:      "*" + strings.Repeat(strings.Repeat("-", len(aliveStr)), width+1) + "*",
 	}
 }
 
 func (b Board) Next() Board {
+	if len(b.lines) == 0 {
+		return Board{}
+	}
 	next := NewBoard(len(b.lines), len(b.lines[0]), b.aliveStr, b.deadStr)
 	for i := range b.lines {
 		for j := range b.lines[i] {
-			aliveNext := b.AliveNext(i, j)
-			next.SetAlive(i, j, aliveNext)
+			alive := b.AliveNext(i, j)
+			next.SetAlive(i, j, alive)
 		}
 	}
 	return next
@@ -92,8 +97,7 @@ func (b Board) Print() {
 	if len(b.lines) == 0 {
 		return
 	}
-	sep := strings.Repeat("-", len(b.aliveStr))
-	fmt.Println("*" + strings.Repeat(sep, len(b.lines[0])+1) + "*")
+	fmt.Println(b.sep)
 	for _, line := range b.lines {
 		fmt.Print("| ")
 		for _, block := range line {
@@ -101,7 +105,7 @@ func (b Board) Print() {
 		}
 		fmt.Println(" |")
 	}
-	fmt.Println("*" + strings.Repeat(sep, len(b.lines[0])+1) + "*")
+	fmt.Println(b.sep)
 }
 
 func (b *Board) Reset(initAliveRatio float64) {
