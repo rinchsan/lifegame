@@ -9,108 +9,94 @@ import (
 
 func main() {
 	const (
-		markAlive        = "★ "
-		markDead         = "**"
+		markAlive        = "@@"
+		markDead         = "__"
 		boardHeight      = 50
 		boardWidth       = 50
-		aliveProbability = 0.1
+		aliveProbability = 0.2
 		interval         = 500 * time.Millisecond
 	)
 
-	game := newGame(boardHeight, boardWidth, markAlive, markDead, aliveProbability, interval)
-	game.start()
+	game := NewGame(boardHeight, boardWidth, markAlive, markDead, aliveProbability, interval)
+	game.Start()
 }
 
-type game struct {
-	board            board
+type Game struct {
+	board            Board
 	aliveProbability float64
 	interval         time.Duration
-	sep              string
 }
 
-func newGame(boardHeight, boardWidth int, markAlive, markDead string, aliveProbability float64, interval time.Duration) game {
-	return game{
-		board:            newBoard(boardHeight, boardWidth, markAlive, markDead),
+func NewGame(boardHeight, boardWidth int, markAlive, markDead string, aliveProbability float64, interval time.Duration) Game {
+	return Game{
+		board:            NewBoard(boardHeight, boardWidth, markAlive, markDead),
 		aliveProbability: aliveProbability,
 		interval:         interval,
-		sep:              strings.Repeat("-", len(markDead)),
 	}
 }
 
-func (g game) start() {
-	g.reset()
-	g.print()
+func (g Game) Start() {
+	g.Reset()
+	g.Print()
 	time.Sleep(g.interval)
 	for {
-		g.next()
-		g.print()
+		g.Next()
+		g.Print()
 		time.Sleep(g.interval)
 	}
 }
 
-func (g *game) reset() {
-	g.board.reset(g.aliveProbability)
+func (g *Game) Reset() {
+	g.board.Reset(g.aliveProbability)
 }
 
-func (g *game) next() {
-	g.board = g.board.next()
+func (g *Game) Next() {
+	g.board = g.board.Next()
 }
 
-func (g game) print() {
-	g.board.print()
-	fmt.Println(strings.Repeat(g.sep, g.board.width()))
+func (g Game) Print() {
+	g.board.Print()
 }
 
-type board struct {
-	lines     [][]block
+type Board struct {
+	lines     [][]Block
 	markAlive string
 	markDead  string
 }
 
-func newBoard(height, width int, markAlive, markDead string) board {
-	lines := make([][]block, height)
+func NewBoard(height, width int, markAlive, markDead string) Board {
+	lines := make([][]Block, height)
 	for i := range lines {
-		lines[i] = make([]block, width)
+		lines[i] = make([]Block, width)
 	}
 	for i := range lines {
 		for j := range lines[i] {
-			lines[i][j] = newBlock(false)
+			lines[i][j] = NewBlock(false)
 		}
 	}
-	return board{
+	return Board{
 		lines:     lines,
 		markAlive: markAlive,
 		markDead:  markDead,
 	}
 }
 
-func (b board) height() int {
-	return len(b.lines)
-}
-
-func (b board) width() int {
-	if len(b.lines) == 0 {
-		return 0
-	}
-	return len(b.lines[0])
-}
-
-func (b board) next() board {
-	next := newBoard(len(b.lines), len(b.lines[0]), b.markAlive, b.markDead)
+func (b Board) Next() Board {
+	next := NewBoard(len(b.lines), len(b.lines[0]), b.markAlive, b.markDead)
 	for i := range b.lines {
 		for j := range b.lines[i] {
-			aliveNext := b.aliveNext(i, j)
-			next.setAlive(i, j, aliveNext)
+			aliveNext := b.AliveNext(i, j)
+			next.SetAlive(i, j, aliveNext)
 		}
 	}
 	return next
 }
 
-func (b *board) setAlive(i, j int, alive bool) {
-	b.lines[i][j].setAlive(alive)
+func (b *Board) SetAlive(i, j int, alive bool) {
+	b.lines[i][j].SetAlive(alive)
 }
 
-func (b board) aliveNext(i, j int) bool {
+func (b Board) AliveNext(i, j int) bool {
 	var aliveCount int
 	if i != 0 && j != 0 {
 		if b.lines[i-1][j-1].alive {
@@ -155,43 +141,50 @@ func (b board) aliveNext(i, j int) bool {
 	return aliveCount == 3 || (b.lines[i][j].alive && aliveCount == 2)
 }
 
-func (b board) print() {
-	for _, line := range b.lines {
-		for _, block := range line {
-			block.print(b.markAlive, b.markDead)
-		}
-		fmt.Println("")
+func (b Board) Print() {
+	if len(b.lines) == 0 {
+		return
 	}
+	sep := strings.Repeat("-", len(b.markAlive))
+	fmt.Println("*" + strings.Repeat(sep, len(b.lines[0])+1) + "*")
+	for _, line := range b.lines {
+		fmt.Print("| ")
+		for _, block := range line {
+			block.Print(b.markAlive, b.markDead)
+		}
+		fmt.Println(" |")
+	}
+	fmt.Println("*" + strings.Repeat(sep, len(b.lines[0])+1) + "*")
 }
 
-func (b *board) reset(aliveProbability float64) {
+func (b *Board) Reset(aliveProbability float64) {
 	for i := range b.lines {
 		for j := range b.lines[i] {
-			b.lines[i][j].reset(aliveProbability)
+			b.lines[i][j].Reset(aliveProbability)
 		}
 	}
 }
 
-type block struct {
+type Block struct {
 	alive bool
 }
 
-func newBlock(alive bool) block {
-	return block{
+func NewBlock(alive bool) Block {
+	return Block{
 		alive: alive,
 	}
 }
 
-func (b *block) setAlive(alive bool) {
+func (b *Block) SetAlive(alive bool) {
 	b.alive = alive
 }
 
-func (b *block) reset(aliveProbability float64) {
+func (b *Block) Reset(aliveProbability float64) {
 	r := rand.Float64()
 	b.alive = aliveProbability >= r
 }
 
-func (b block) print(markAlive, markDead string) {
+func (b Block) Print(markAlive, markDead string) {
 	if b.alive {
 		fmt.Print(markAlive)
 	} else {
