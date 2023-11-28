@@ -1,3 +1,3 @@
 module github.com/rinchsan/lifegame
 
-go 1.21.3
+go 1.21.4
